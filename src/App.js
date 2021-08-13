@@ -1,83 +1,81 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import Card from "./components/Card/Card";
+import Drawer from "./components/Drawer";
+import Header from "./components/Header";
+import axios from 'axios';
+
 
 function App() {
+  const [items, setItems] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  const [cartItems, setCartItems] = useState([]);
+  const [searchValue, setSearchValue] = useState('');
+  const [cartOpened, setCartOpened] = useState(false);
+
+  useEffect(() => {
+    axios.get('https://6115962e8f38520017a38566.mockapi.io/items')
+    .then(res=>{setItems(res.data)});
+  }, []);
+  
+  useEffect(()=>{
+    axios.get('https://6115962e8f38520017a38566.mockapi.io/cart')
+    .then(res=>setCartItems(res.data))
+  },[])
+
+  const onAddToCart = (obj) => {
+    axios.post('https://6115962e8f38520017a38566.mockapi.io/cart',obj)
+    setCartItems(prev => [...prev, obj])
+  }
+
+
+
+
+  const onRemoveFromCart=(id)=>{
+    axios.delete(`https://6115962e8f38520017a38566.mockapi.io/cart/${id}`)
+    setCartItems(prev => prev.filter(item=>item.id!==id))
+  }
+
+  const onChangeSearchInput = (event)=>{
+    setSearchValue(event.target.value)
+  }
+
+  const updateCart = ()=>{
+    axios.get('https://6115962e8f38520017a38566.mockapi.io/cart')
+    .then(res=>setCartItems(res.data))
+  }
+
   return (
     <div className='wrapper clear'>
-
-      <header className='p-40 d-flex justify-between align-center'>
-        <div className='headerLeft d-flex align-center'>
-          <img width={40} height={40} src='/img/logo.svg'></img>
-          <div >
-            <h3 className='text-uppercase'>React Shop</h3>
-            <p className='opacity-5'>Магазин кроссовок</p>
-          </div>
-        </div>
-        <div>
-        </div>
-        <ul className='d-flex'>
-          <li className='mr-30'>
-            <img width={18} height={18} src='/img/cart.svg'></img>
-            <span>1205 руб.</span>
-          </li>
-          <li>
-            <img width={18} height={18} src='/img/user.svg'></img>
-          </li>
-        </ul>
-      </header>
+      {cartOpened && <Drawer 
+      items={cartItems} 
+      closeCart={() => setCartOpened(false)}
+      onRemove={onRemoveFromCart} />}
+      <Header onClickCart={() => {setCartOpened(true) ;updateCart()}} />
 
       <div className='content p-40'>
-        <h1 className='mb-40' >Все Кроссовки</h1>
-         
-         <div className='d-flex '>
-         <div className='card'>
-          <img width={133} height={112} src='/img/crossiki/1.jpg' alt='crossik'></img>
-          <h5>Мужские кроссовки Nike Blazer Mid</h5>
-          <div className='d-flex justify-between align-center '>
-            <div className='d-flex flex-column' >
-              <span>Цена:</span>
-              <b>12 999р</b>
-            </div>
-            <button className='button'><img src='/img/plus.png' width={11} height={11} alt='plus' /></button>
+        <div  className='d-flex align-center mb-40 justify-between'>
+          <h1 className='flex-wrap'>{searchValue?`Поиск по щапросу:${searchValue}`:'Все Кроссовки'}</h1>
+          <div className='search-block d-flex align-center' >
+            <img alt='seacrh' src='/img/search.svg' width={18} height={18} />
+            <input value={searchValue} onChange={onChangeSearchInput} placeholder='Поиск...' />
+            {searchValue?<img onClick={()=>setSearchValue('')} src='/img/btn-remove.svg' alt='remove' />:null}
           </div>
         </div>
 
-        <div className='card'>
-          <img width={133} height={112} src='/img/crossiki/2.jpg' alt='crossik'></img>
-          <h5>Мужские кроссовки Nike Blazer Mid</h5>
-          <div className='d-flex justify-between align-center '>
-            <div className='d-flex flex-column' >
-              <span>Цена:</span>
-              <b>12 999р</b>
-            </div>
-            <button className='button'><img src='/img/plus.png' width={11} height={11} alt='plus' /></button>
-          </div>
+        <div className='d-flex flex-wrap'>
+          {items.filter((item)=>item.name.toLowerCase().includes(searchValue.toLowerCase())).map((item,index) => {
+            return (
+              <Card
+                key={item.id}
+                title={item.name}
+                price={item.price}
+                imageUrl={item.imageUrl}
+                onPlus={(obj) => onAddToCart(obj)}
+                isFavorited={item.isFavorite}
+              />
+            )
+          })}
         </div>
-
-        <div className='card'>
-          <img width={133} height={112} src='/img/crossiki/3.jpg' alt='crossik'></img>
-          <h5>Мужские кроссовки Nike Blazer Mid</h5>
-          <div className='d-flex justify-between align-center '>
-            <div className='d-flex flex-column' >
-              <span>Цена:</span>
-              <b>12 999р</b>
-            </div>
-            <button className='button'><img src='/img/plus.png' width={11} height={11} alt='plus' /></button>
-          </div>
-        </div>
-
-        <div className='card'>
-          <img width={133} height={112} src='/img/crossiki/4.jpg' alt='crossik'></img>
-          <h5>Мужские кроссовки Nike Blazer Mid</h5>
-          <div className='d-flex justify-between align-center '>
-            <div className='d-flex flex-column' >
-              <span>Цена:</span>
-              <b>12 999р</b>
-            </div>
-            <button className='button'><img src='/img/plus.png' width={11} height={11} alt='plus' /></button>
-          </div>
-        </div>
-
-         </div>
 
       </div>
     </div>
