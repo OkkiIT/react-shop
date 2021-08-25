@@ -1,83 +1,110 @@
 import React, { useState, useEffect } from "react";
-import Card from "./components/Card/Card";
+
 import Drawer from "./components/Drawer";
 import Header from "./components/Header";
 import axios from 'axios';
+import { Route, Link } from "react-router-dom";
+import Home from "./pages/Home.jsx";
+
+
 
 
 function App() {
   const [items, setItems] = useState([]);
-  const [favorites, setFavorites] = useState([]);
   const [cartItems, setCartItems] = useState([]);
   const [searchValue, setSearchValue] = useState('');
   const [cartOpened, setCartOpened] = useState(false);
-
+  const [totalPrice, setTotalPrice] = useState(0)
   useEffect(() => {
     axios.get('https://6115962e8f38520017a38566.mockapi.io/items')
-    .then(res=>{setItems(res.data)});
-  }, []);
-  
-  useEffect(()=>{
+      .then(res => { setItems(res.data)});
+      
     axios.get('https://6115962e8f38520017a38566.mockapi.io/cart')
-    .then(res=>setCartItems(res.data))
-  },[])
+      .then(res => {
+        setCartItems(res.data);
+        console.log(res)
+      })
+      calculatePrice(cartItems);
+  }, []);
 
-  const onAddToCart = (obj) => {
-    axios.post('https://6115962e8f38520017a38566.mockapi.io/cart',obj)
-    setCartItems(prev => [...prev, obj])
+
+  const calculatePrice = (cartItem) => {
+    cartItem.forEach(item => {
+      setTotalPrice(0 + item.price)
+    })
   }
 
+  const calcTotalPrice = (cartItem) => {
+    let totalPrice = 0;
+    cartItem.forEach(item => {
 
-
-
-  const onRemoveFromCart=(id)=>{
-    axios.delete(`https://6115962e8f38520017a38566.mockapi.io/cart/${id}`)
-    setCartItems(prev => prev.filter(item=>item.id!==id))
+      totalPrice = item.price + totalPrice
+    })
+    return totalPrice
   }
 
-  const onChangeSearchInput = (event)=>{
+  const isItemAddedToCart = (obj) => {
+    return cartItems.find((item) => item.id === obj.id)
+  };
+
+  const onRemove = async (obj) => {
+    const item = cartItems.find(item => item.id === obj.id);
+    await axios.delete(`https://6115962e8f38520017a38566.mockapi.io/cart/${item._id}`);
+    updateCart();
+  }
+
+  const onAdd = async (obj) => {
+    await axios.post('https://6115962e8f38520017a38566.mockapi.io/cart', obj)
+    updateCart();;
+  }
+
+  const onAddToCart = async (obj) => {
+    try {
+      if (isItemAddedToCart(obj)) {
+        onRemove(obj);
+      } else {
+        onAdd(obj);
+      }
+    } catch (error) {
+      alert(error)
+    }
+
+
+  }
+
+  const onChangeSearchInput = (event) => {
     setSearchValue(event.target.value)
   }
 
-  const updateCart = ()=>{
+  const updateCart = () => {
     axios.get('https://6115962e8f38520017a38566.mockapi.io/cart')
-    .then(res=>setCartItems(res.data))
+      .then(res => setCartItems(res.data))
   }
+
+  if (cartOpened){}
 
   return (
     <div className='wrapper clear'>
-      {cartOpened && <Drawer 
-      items={cartItems} 
-      closeCart={() => setCartOpened(false)}
-      onRemove={onRemoveFromCart} />}
-      <Header onClickCart={() => {setCartOpened(true) ;updateCart()}} />
+      {cartOpened && <Drawer
+        calcTotalPrice={calcTotalPrice}
+        items={cartItems}
+        closeCart={() => setCartOpened(false)}
+        onRemove={onRemove} />
+        }
+      <Header totalPrice={calcTotalPrice(cartItems)} onClickCart={() => { setCartOpened(true); updateCart() }} />
+      <Route path='/' exact>
+        <Home
+          cartItems={cartItems}
+          items={items}
+          searchValue={searchValue}
+          setSearchValue={setSearchValue}
+          onChangeSearchInput={onChangeSearchInput}
+         
+          onAddToCart={onAddToCart}
+        />
+      </Route>
+      
 
-      <div className='content p-40'>
-        <div  className='d-flex align-center mb-40 justify-between'>
-          <h1 className='flex-wrap'>{searchValue?`Поиск по щапросу:${searchValue}`:'Все Кроссовки'}</h1>
-          <div className='search-block d-flex align-center' >
-            <img alt='seacrh' src='/img/search.svg' width={18} height={18} />
-            <input value={searchValue} onChange={onChangeSearchInput} placeholder='Поиск...' />
-            {searchValue?<img onClick={()=>setSearchValue('')} src='/img/btn-remove.svg' alt='remove' />:null}
-          </div>
-        </div>
-
-        <div className='d-flex flex-wrap'>
-          {items.filter((item)=>item.name.toLowerCase().includes(searchValue.toLowerCase())).map((item,index) => {
-            return (
-              <Card
-                key={item.id}
-                title={item.name}
-                price={item.price}
-                imageUrl={item.imageUrl}
-                onPlus={(obj) => onAddToCart(obj)}
-                isFavorited={item.isFavorite}
-              />
-            )
-          })}
-        </div>
-
-      </div>
     </div>
   );
 }

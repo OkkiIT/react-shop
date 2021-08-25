@@ -1,4 +1,14 @@
-const Drawer = ({ onRemove, closeCart, items = [] }) => {
+import { useState,useEffect } from "react"
+
+const Drawer = ({ onRemove, closeCart, items = [],calcTotalPrice }) => {
+  let totalPrice = calcTotalPrice(items)
+  const [tax,setTax]=useState(0)
+  
+  useEffect(() => {
+      setTax(Math.round(totalPrice/100*5))  
+  },[totalPrice]);
+  
+
   return (
     <div className='overlay' >
       <div iv className='drawer'>
@@ -12,10 +22,10 @@ const Drawer = ({ onRemove, closeCart, items = [] }) => {
               <div className='cartItem d-flex align-center mb-20'>
                 <img className='mr-20' width={70} height={70} src={obj.imageUrl} alt='Sneakers' />
                 <div>
-                  <p className='mb-5'>{obj.title}</p>
+                  <p className='mb-5'>{obj.name}</p>
                   <b>{obj.price} руб.</b>
                 </div>
-                <img onClick={() => onRemove(obj.id)} src='/img/btn-remove.svg' alt='remove' />
+                <img onClick={() => onRemove(obj)} src='/img/btn-remove.svg' alt='remove' />
               </div>
             )
           })}
@@ -25,13 +35,13 @@ const Drawer = ({ onRemove, closeCart, items = [] }) => {
           <li className='d-flex'>
             <span>Итого:</span>
             <div></div>
-            <b>21498</b>
+            <b>{totalPrice}руб.</b>
           </li>
 
           <li className='d-flex'>
             <span>Налог 5%:</span>
             <div></div>
-            <b>1074</b>
+            <b>{tax}руб.</b>
           </li>
         </ul>
         <button> Оформить заказ</button>
